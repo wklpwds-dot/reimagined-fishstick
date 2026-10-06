@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тренажёр по орфографии</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#1f2937}
+.container{max-width:900px;margin:40px auto;padding:20px}
+h1{text-align:center;margin-bottom:30px}
+h2{margin-top:25px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+button{border:2px solid #ddd;border-radius:12px;padding:14px;font-size:16px;cursor:pointer;background:#fff;transition:.2s}
+button:hover{transform:translateY(-2px)}
+button.active{background:#2563eb;color:#fff;border-color:#2563eb}
+.card{background:#fff;border-radius:18px;padding:28px;box-shadow:0 5px 20px rgba(0,0,0,.08);margin-top:20px}
+.question{text-align:center;font-size:25px;font-weight:bold;margin:25px 0}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.answer{text-align:left}
+.answer.correct{background:#22c55e;color:#fff;border-color:#22c55e}
+.answer.wrong{background:#ef4444;color:#fff;border-color:#ef4444}
+#result{text-align:center;min-height:25px;margin-top:18px;font-weight:bold}
+.next,.restart{width:100%;margin-top:18px;background:#111827;color:#fff;border-color:#111827}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:25px}
+.stat{background:#f9fafb;border-radius:12px;padding:20px;text-align:center}
+.stat strong{display:block;font-size:30px;margin-top:8px}
+.hidden{display:none}
+.muted{color:#6b7280;font-size:14px}
+@media(max-width:650px){.grid,.stats,.answers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>📚 Тренажёр по орфографии</h1>
+
+<h2>1. Выберите тему</h2>
+<div class="grid">
+<button class="topic active" data-topic="verbs">Глаголы</button>
+<button class="topic" data-topic="participles">Причастия</button>
+<button class="topic" data-topic="adjectives">Прилагательные</button>
+</div>
+
+<h2>2. Выберите уровень сложности</h2>
+<div class="grid">
+<button class="level active" data-level="easy">🟢 Лёгкий</button>
+<button class="level" data-level="medium">🟡 Средний</button>
+<button class="level" data-level="hard">🔴 Сложный</button>
+</div>
+
+<div class="card" id="quizCard">
+<div id="progress" class="muted"></div>
+<div id="question" class="question"></div>
+<div id="answers" class="answers"></div>
+<div id="result"></div>
+<button class="next hidden" id="next">Следующий вопрос →</button>
+</div>
+
+<div class="card hidden" id="finalCard">
+<h2 style="text-align:center">🎉 Результат</h2>
+<p id="finalInfo" style="text-align:center"></p>
+<div class="stats">
+<div class="stat">Правильные ответы<strong id="correctStat">0</strong></div>
+<div class="stat">Ошибки<strong id="wrongStat">0</strong></div>
+<div class="stat">Процент выполнения<strong id="percentStat">0%</strong></div>
+</div>
+<button class="restart" id="restart">🔄 Пройти заново</button>
+</div>
+</div>
+
+<script>
+const questions={
+verbs:{
+easy:[
+["Он старается всё ____ вовремя.",["сделать","зделать"],"сделать"],
+["Нужно ____ домашнее задание.",["закончить","закончит"],"закончить"],
+["Необходимо ____ правило.",["запомнить","запомнит"],"запомнить"],
+["Она решила ____ книгу до конца.",["прочитать","прочитат"],"прочитать"],
+["Попробуй ____ эту задачу.",["решить","решеть"],"решить"]
+],
+medium:[
+["Он решил ____ работу до вечера.",["закончить","закончеть"],"закончить"],
+["Важно ____ ситуацию.",["проанализировать","проанализироватьь"],"проанализировать"],
+["Она продолжает ____ над проектом.",["работать","работоть"],"работать"],
+["Нужно ____ все документы.",["проверить","провереть"],"проверить"],
+["Он хочет ____ ошибку.",["исправить","исправеть"],"исправить"]
+],
+hard:[
+["Не стоит ____ решение слишком поспешно.",["принимать","приниматьь"],"принимать"],
+["Он попытался ____ ошибку.",["исправить","исправеть"],"исправить"],
+["Нужно ____ все обстоятельства.",["учесть","учисть"],"учесть"],
+["Следует ____ проблему заранее.",["предотвратить","предотвратеть"],"предотвратить"],
+["Важно ____ последствия решения.",["предвидеть","предвидить"],"предвидеть"]
+]},
+participles:{
+easy:[
+["Как правильно?",["решённая задача","решоная задача"],"решённая задача"],
+["Как правильно?",["прочитанная книга","прочитаная книга"],"прочитанная книга"],
+["Как правильно?",["написанное письмо","написаное письмо"],"написанное письмо"],
+["Как правильно?",["выученное правило","выученое правило"],"выученное правило"],
+["Как правильно?",["закрытая дверь","закрытаяа дверь"],"закрытая дверь"]
+],
+medium:[
+["Как правильно?",["крашеный забор","крашенный забор"],"крашеный забор"],
+["Как правильно?",["жареная картошка","жаренная картошка"],"жареная картошка"],
+["Как правильно?",["выученное правило","выученое правило"],"выученное правило"],
+["Как правильно?",["решённая задача","решёная задача"],"решённая задача"],
+["Как правильно?",["прочитанный роман","прочитаный роман"],"прочитанный роман"]
+],
+hard:[
+["Как правильно?",["решённая учеником задача","решёная учеником задача"],"решённая учеником задача"],
+["Как правильно?",["непрочитанная книга","не прочитаная книга"],"непрочитанная книга"],
+["Как правильно?",["запертая дверь","запертаяя дверь"],"запертая дверь"],
+["Как правильно?",["подписанный директором документ","подписаный директором документ"],"подписанный директором документ"],
+["Как правильно?",["невидимый глазу объект","невидемый глазу объект"],"невидимый глазу объект"]
+]},
+adjectives:{
+easy:[
+["Как правильно?",["деревянный стол","деревяный стол"],"деревянный стол"],
+["Как правильно?",["оловянный солдатик","оловяный солдатик"],"оловянный солдатик"],
+["Как правильно?",["ветреный день","ветренный день"],"ветреный день"],
+["Как правильно?",["глиняный кувшин","глиняныйй кувшин"],"глиняный кувшин"],
+["Как правильно?",["серебряный браслет","серебрянный браслет"],"серебряный браслет"]
+],
+medium:[
+["Как правильно?",["искусственный материал","искуственный материал"],"искусственный материал"],
+["Как правильно?",["общественный транспорт","общественый транспорт"],"общественный транспорт"],
+["Как правильно?",["соломенная шляпа","соломеная шляпа"],"соломенная шляпа"],
+["Как правильно?",["государственный праздник","государственый праздник"],"государственный праздник"],
+["Как правильно?",["торжественное мероприятие","торжественое мероприятие"],"торжественное мероприятие"]
+],
+hard:[
+["Как правильно?",["юный спортсмен","юнный спортсмен"],"юный спортсмен"],
+["Как правильно?",["безветренная погода","безветреная погода"],"безветренная погода"],
+["Как правильно?",["экстренный случай","экстреный случай"],"экстренный случай"],
+["Как правильно?",["искусственный интеллект","искуственный интеллект"],"искусственный интеллект"],
+["Как правильно?",["ответственный сотрудник","ответственый сотрудник"],"ответственный сотрудник"]
+]}
+};
+
+let topic="verbs",level="easy",current=0,correct=0,wrong=0,answered=false,quiz=[];
+
+const topicButtons=document.querySelectorAll(".topic");
+const levelButtons=document.querySelectorAll(".level");
+
+function shuffle(arr){
+const a=[...arr];
+for(let i=a.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]];
+}
+return a;
+}
+
+function start(){
+current=0;correct=0;wrong=0;answered=false;
+quiz=shuffle(questions[topic][level]);
+document.getElementById("quizCard").classList.remove("hidden");
+document.getElementById("finalCard").classList.add("hidden");
+showQuestion();
+}
+
+function showQuestion(){
+answered=false;
+const item=quiz[current];
+document.getElementById("progress").textContent=`Вопрос ${current+1} из ${quiz.length}`;
+document.getElementById("question").textContent=item[0];
+document.getElementById("result").textContent="";
+document.getElementById("next").classList.add("hidden");
+const answers=document.getElementById("answers");
+answers.innerHTML="";
+shuffle(item[1]).forEach(answer=>{
+const b=document.createElement("button");
+b.className="answer";
+b.textContent=answer;
+b.onclick=()=>checkAnswer(b,answer);
+answers.appendChild(b);
+});
+}
+
+function checkAnswer(button,answer){
+if(answered)return;
+answered=true;
+const correctAnswer=quiz[current][2];
+document.querySelectorAll(".answer").forEach(b=>{
+b.disabled=true;
+if(b.textContent===correctAnswer)b.classList.add("correct");
+});
+if(answer===correctAnswer){
+correct++;
+button.classList.add("correct");
+document.getElementById("result").textContent="✅ Правильно!";
+}else{
+wrong++;
+button.classList.add("wrong");
+document.getElementById("result").textContent="❌ Ошибка. Правильный ответ выделен зелёным.";
+}
+document.getElementById("next").classList.remove("hidden");
+}
+
+document.getElementById("next").onclick=()=>{
+current++;
+if(current>=quiz.length)finish();
+else showQuestion();
+};
+
+function finish(){
+document.getElementById("quizCard").classList.add("hidden");
+document.getElementById("finalCard").classList.remove("hidden");
+const percent=Math.round(correct/quiz.length*100);
+document.getElementById("correctStat").textContent=correct;
+document.getElementById("wrongStat").textContent=wrong;
+document.getElementById("percentStat").textContent=percent+"%";
+const topicName={verbs:"глаголы",participles:"причастия",adjectives:"прилагательные"}[topic];
+const levelName={easy:"лёгкий",medium:"средний",hard:"сложный"}[level];
+document.getElementById("finalInfo").textContent=`Тема: ${topicName} • Уровень: ${levelName}`;
+}
+
+document.getElementById("restart").onclick=start;
+
+topicButtons.forEach(b=>b.onclick=()=>{
+topicButtons.forEach(x=>x.classList.remove("active"));
+b.classList.add("active");
+topic=b.dataset.topic;
+start();
+});
+
+levelButtons.forEach(b=>b.onclick=()=>{
+levelButtons.forEach(x=>x.classList.remove("active"));
+b.classList.add("active");
+level=b.dataset.level;
+start();
+});
+
+start();
+</script>
+</body>
+</html>
